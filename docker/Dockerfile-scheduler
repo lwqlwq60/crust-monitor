@@ -1,0 +1,31 @@
+############################################ build Scheduler ############################################
+
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-scheduler
+WORKDIR /app
+
+COPY ./backend/Scheduler.sln ./
+
+# copy csproj and restore as distinct layers
+
+COPY ./backend/Scheduler.Jobs.Core/*.csproj ./Scheduler.Jobs.Core/
+COPY ./backend/Scheduler.Jobs.Script/*.csproj ./Scheduler.Jobs.Script/
+COPY ./backend/Scheduler.Jobs/*.csproj ./Scheduler.Jobs/
+COPY ./backend/Scheduler/*.csproj ./Scheduler/
+COPY ./backend/NuGet.Config ./
+
+RUN dotnet restore
+
+# copy and publish app and libraries
+
+COPY ./backend .
+
+RUN dotnet publish -c Release ./Scheduler/Scheduler.csproj -o /publish
+
+############################################ runtime Scheduler ############################################
+
+# runtime for scheduler
+FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime-scheduler
+WORKDIR /app
+COPY --from=build-scheduler /publish ./
+COPY ./backend/scheduler-new.db ./scheduler.db
+ENTRYPOINT ["dotnet", "Scheduler.dll"]

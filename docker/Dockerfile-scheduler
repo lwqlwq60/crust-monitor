@@ -27,5 +27,5 @@ RUN dotnet publish -c Release ./Scheduler/Scheduler.csproj -o /publish
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1 AS runtime-scheduler
 WORKDIR /app
 COPY --from=build-scheduler /publish ./
-COPY ./backend/scheduler-new.db ./scheduler.db
+COPY ./backend/scheduler/scheduler-new.db ./scheduler.db
 ENTRYPOINT ["dotnet", "Scheduler.dll"]

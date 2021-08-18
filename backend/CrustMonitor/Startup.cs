@@ -1,12 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Http;
-using System.Threading.Tasks;
+using Blazored.Modal;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,9 +26,13 @@ namespace CrustMonitor
         {
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            var timeout = Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10));
-            services.AddHttpClient<CrustService>()
-                .AddPolicyHandler(request => timeout).SetHandlerLifetime(TimeSpan.FromMinutes(5));
+            services.AddBlazoredModal();
+            services.AddSingleton<CrustService>();
+            services.AddHttpClient("crust-monitor")
+                .AddPolicyHandler(request => request.RequestUri.ToString().Contains("health")
+                    ? Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(2))
+                    : Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(10)))
+                .SetHandlerLifetime(TimeSpan.FromMinutes(5));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

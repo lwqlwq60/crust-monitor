@@ -1,11 +1,32 @@
 @page "/"
 
 @using CrustMonitor.Data
-@inject CrustService CrustService
+@inject CrustService _crustService
 
 <h1>Dashboard</h1>
 
-<p>Search the crust monitor node and add to dashboard.</p>
+<div style="display: flex;justify-content: space-between;">
+    <p>Search the crust monitor node and add to dashboard.</p>
+
+    <div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio1" value="option1" @onchange="() => ChangeInterval(10)" checked>
+            <label class="form-check-label" for="inlineRadio1">10s</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio2" value="option2" @onchange="() => ChangeInterval(30)">
+            <label class="form-check-label" for="inlineRadio2">30s</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio3" value="option3" @onchange="() => ChangeInterval(60)">
+            <label class="form-check-label" for="inlineRadio3">1min</label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="radio" name="inlineRadioOptions" id="inlineRadio4" value="option4" @onchange="() => ChangeInterval(300)">
+            <label class="form-check-label" for="inlineRadio3">5min</label>
+        </div>
+    </div>
+</div>
 
 <div class="input-group mb-3">
     <div class="input-group-prepend">
@@ -15,25 +36,255 @@
     <button @onclick="SearchNodesAsync" type="button" class="btn btn-primary ml-1">Add To Dashboard</button>
 </div>
 
-@if (_nodes.Count == 0 && _loading)
+@if (_loading)
 {
     <p>
         <em>Searching...</em>
     </p>
 }
 
+<div class="card-columns">
+    @foreach (var node in CrustService.Nodes)
+    {
+        <div class="card">
+            @if (@node.Online)
+            {
+                <div class="card-header bg-success" style="font-weight: bold;font-size: large; display: flex; flex-direction: row; justify-content: space-between; align-items: center">
+                    <div>
+                        Node: @node.Ip
+                    </div>
+                    <button type="button" @onclick="() => RequestWorkloadAsync(node.Ip)" class="btn btn-light">Request Workload</button>
+                    <button type="button" @onclick="() => DeleteNodeAsync(node.Ip)" class="btn btn-light">
+                        <i class="oi oi-trash"></i>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="card-header bg-danger" style="font-weight: bold;font-size: large; display: flex; flex-direction: row; justify-content: space-between; align-items: center">
+                    <div>
+                        Node: @node.Ip
+                    </div>
+                    <button type="button" @onclick="() => DeleteNodeAsync(node.Ip)" class="btn btn-light">
+                        <i class="oi oi-trash"></i>
+                    </button>
+                </div>
+            }
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item" style="@GetItemStyle(node.ChainStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            Chain
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.ChainStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.ChainStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestChainLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.ApiStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            Api
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.ApiStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.ApiStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestApiLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.SWorkerStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            SWorker
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.SWorkerStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.SWorkerStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestSWorkerLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.SWorkerAStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            SWorkerA
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.SWorkerAStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.SWorkerAStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestSWorkerALogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.SWorkerBStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            SWorkerB
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.SWorkerBStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.SWorkerBStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestSWorkerBLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.SManagerStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            SManager
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.SManagerStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.SManagerStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestSManagerLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+                <li class="list-group-item" style="@GetItemStyle(node.IpfsStatus)">
+                    <div style="display: grid;grid-template-columns: 30% 40% 30% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            Ipfs
+                        </div>
+                        <div style="font-weight: bold">
+                            @node.IpfsStatus
+                        </div>
+                        <button type="button" disabled="@IsDown(node.IpfsStatus)" class="mr-1 btn btn-secondary" @onclick="() => RequestIpfsLogAsync(node.Ip)">Request Log</button>
+                    </div>
+                </li>
+
+            </ul>
+        </div>
+    }
+
+</div>
+@implements IDisposable
+
 @code {
     private string _ip;
 
     private bool _loading = false;
-    private static List<CrustNode> _nodes = new List<CrustNode>();
+
+    [CascadingParameter]
+    public IModalService Modal { get; set; }
+
+        private const string ItemSuccessStyle = "background: #8fd19e;padding: 5px";
+        private const string ItemDangerStyle = "background: #f5c6cb;padding: 5px";
+
+    private volatile bool _running = true;
+
+    private volatile int _interval = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _loading = true;
+        await CrustService.InitAsync();
+        _loading = false;
+        Task.Factory.StartNew(async () =>
+        {
+            while (_running)
+            {
+                await Task.Delay(_interval * 1000);
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
+
+    private void ChangeInterval(int second)
+    {
+        _interval = second;
+    }
+
+    private static string GetItemStyle(string status)
+    {
+        return status.StartsWith("Up") ? ItemSuccessStyle : ItemDangerStyle;
+    }
+
+    private static bool IsDown(string status)
+    {
+        return !status.StartsWith("Up");
+    }
 
     private async Task SearchNodesAsync()
     {
         _loading = true;
-        var nodes = await CrustService.SearchLocalNodesAsync(_ip);
-        _nodes.AddRange(nodes);
+        await CrustService.SearchLocalNodesAsync(_ip);
         _loading = false;
+    }
+
+    private async Task DeleteNodeAsync(string ip)
+    {
+        var res = Modal.Show<DeleteConfirm>("Warning");
+        var result = await res.Result;
+        if (!result.Cancelled)
+        {
+            await CrustService.DeleteNodeAsync(ip);
+        }
+    }
+
+    private async Task RequestChainLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "chain", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("Chain Logs", parameter);
+    }
+
+    private async Task RequestApiLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "api", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("Api Logs", parameter);
+    }
+
+    private async Task RequestSWorkerLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "sworker", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("SWorker Logs", parameter);
+    }
+
+    private async Task RequestSWorkerALogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "sworker-a", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("SWorkerA Logs", parameter);
+    }
+
+    private async Task RequestSWorkerBLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "sworker-b", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("SWorkerB Logs", parameter);
+    }
+
+    private async Task RequestSManagerLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "smanager", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("SManager Logs", parameter);
+    }
+
+    private async Task RequestIpfsLogAsync(string ip)
+    {
+        var log = await CrustService.GetLogAsync(ip, "ipfs", 5000);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("Ipfs Logs", parameter);
+    }
+
+    private async Task RequestWorkloadAsync(string ip)
+    {
+        var log = await CrustService.GetWorkloadAsync(ip);
+        var parameter = new ModalParameters();
+        parameter.Add("Message", log);
+        Modal.Show<Log>("Workload", parameter);
+    }
+
+    public void Dispose()
+    {
+        _running = false;
     }
 
 }

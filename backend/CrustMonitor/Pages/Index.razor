@@ -1,0 +1,39 @@
+@page "/"
+
+@using CrustMonitor.Data
+@inject CrustService CrustService
+
+<h1>Dashboard</h1>
+
+<p>Search the crust monitor node and add to dashboard.</p>
+
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text">Search IP Address:</span>
+    </div>
+    <input type="text" class="form-control" aria-describedby="basic-addon3" @bind="_ip">
+    <button @onclick="SearchNodesAsync" type="button" class="btn btn-primary ml-1">Add To Dashboard</button>
+</div>
+
+@if (_nodes.Count == 0 && _loading)
+{
+    <p>
+        <em>Searching...</em>
+    </p>
+}
+
+@code {
+    private string _ip;
+
+    private bool _loading = false;
+    private static List<CrustNode> _nodes = new List<CrustNode>();
+
+    private async Task SearchNodesAsync()
+    {
+        _loading = true;
+        var nodes = await CrustService.SearchLocalNodesAsync(_ip);
+        _nodes.AddRange(nodes);
+        _loading = false;
+    }
+
+}

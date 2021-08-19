@@ -34,7 +34,7 @@ namespace CrustMonitor.Data
                 {
                     try
                     {
-                        await Task.Delay(5000);
+                        await Task.Delay(TimeSpan.FromMinutes(1));
                         await UpdateNodeStatusAsync();
                     }
                     catch
@@ -189,12 +189,12 @@ namespace CrustMonitor.Data
             else
             {
                 node.ChainStatus = "Unknown";
-                node.ApiStatus ="Unknown";
-                node.SWorkerStatus ="Unknown";
+                node.ApiStatus = "Unknown";
+                node.SWorkerStatus = "Unknown";
                 node.SWorkerAStatus = "Unknown";
                 node.SWorkerBStatus = "Unknown";
                 node.SManagerStatus = "Unknown";
-                node.IpfsStatus = "Unknown"; 
+                node.IpfsStatus = "Unknown";
             }
         }
 

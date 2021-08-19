@@ -1,0 +1,1 @@
+docker build -f docker/Dockerfile -t lwqlwq60/crust-monitor:latest .

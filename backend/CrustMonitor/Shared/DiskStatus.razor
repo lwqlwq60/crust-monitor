@@ -1,0 +1,40 @@
+﻿<div>
+    <div style="max-height: 80vh; max-width: 120vh; overflow-y: auto;">
+        <table class="table">
+            <thead>
+            <tr>
+                <th>Disks</th>
+                <th>Total</th>
+                <th>Available</th>
+                <th>Used</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var disk in Message.Values.OrderBy(_ => int.Parse(_.VolumeLabel.Replace("/opt/crust/disks/", ""))))
+            {
+                <tr>
+                    <td>@disk.VolumeLabel</td>
+                    <td>@($"{disk.Total}GiB/{Math.Round(disk.Total / 1024.0, 2)}TiB")</td>
+                    <td>@($"{disk.Available}GiB/{Math.Round(disk.Available / 1024.0, 2)}TiB")</td>
+                    <td>@($"{Math.Round(disk.Total - disk.Available, 2)}GiB/{Math.Round((disk.Total - disk.Available) / 1024.0, 2)}TiB")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
+    </div>
+    <button @onclick="Close" class="btn btn-primary">Close</button>
+</div>
+
+@code {
+
+    [CascadingParameter]
+    BlazoredModalInstance BlazoredModal { get; set; }
+
+    [Parameter]
+    public IDictionary<string, Data.DiskStatus> Message { get; set; }
+
+    async Task Close() => await BlazoredModal.CloseAsync(ModalResult.Ok(true));
+    async Task Cancel() => await BlazoredModal.CancelAsync();
+
+}

@@ -1,6 +1,7 @@
 @page "/"
 
 @using CrustMonitor.Data
+@using DiskStatus = CrustMonitor.Data.DiskStatus
 @inject CrustService _crustService
 
 <h1>Dashboard</h1>
@@ -53,8 +54,8 @@
                     <div>
                         Node: @node.Ip
                     </div>
-                    <button type="button" @onclick="() => RequestWorkloadAsync(node.Ip)" class="btn btn-light">Request Workload</button>
-                    <button type="button" @onclick="() => DeleteNodeAsync(node.Ip)" class="btn btn-light">
+                    <button type="button" @onclick="() => RequestDiskStatusAsync(node.Ip)" class="btn btn-light btn-sm">Disk Status</button>
+                    <button type="button" @onclick="() => DeleteNodeAsync(node.Ip)" class="btn btn-light btm-sm">
                         <i class="oi oi-trash"></i>
                     </button>
                 </div>
@@ -274,12 +275,12 @@
         Modal.Show<Log>("Ipfs Logs", parameter);
     }
 
-    private async Task RequestWorkloadAsync(string ip)
+    private async Task RequestDiskStatusAsync(string ip)
     {
-        var log = await CrustService.GetWorkloadAsync(ip);
+        var disk = await CrustService.GetDiskStatusAsync(ip);
         var parameter = new ModalParameters();
-        parameter.Add("Message", log);
-        Modal.Show<Log>("Workload", parameter);
+        parameter.Add("Message", disk);
+        Modal.Show<Shared.DiskStatus>("DiskStatus", parameter);
     }
 
     public void Dispose()

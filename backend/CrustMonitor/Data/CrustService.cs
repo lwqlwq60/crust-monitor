@@ -175,16 +175,24 @@ namespace CrustMonitor.Data
         {
             if (node.Online)
             {
-                var status = await CreateClient().GetStringAsync($"http://{node.Ip}:51888/api/crust-monitor/status");
-                var statusDict = JsonSerializer.Deserialize<IDictionary<string, ContainerStatus>>(status,
-                    new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                node.ChainStatus = statusDict!["chain"].Status;
-                node.ApiStatus = statusDict["api"].Status;
-                node.SWorkerStatus = statusDict["sworker"].Status;
-                node.SWorkerAStatus = statusDict["sworker-a"].Status;
-                node.SWorkerBStatus = statusDict["sworker-b"].Status;
-                node.SManagerStatus = statusDict["smanager"].Status;
-                node.IpfsStatus = statusDict["ipfs"].Status;
+                try
+                {
+                    var status =
+                        await CreateClient().GetStringAsync($"http://{node.Ip}:51888/api/crust-monitor/status");
+                    var statusDict = JsonSerializer.Deserialize<IDictionary<string, ContainerStatus>>(status,
+                        new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                    node.ChainStatus = statusDict!["chain"].Status;
+                    node.ApiStatus = statusDict["api"].Status;
+                    node.SWorkerStatus = statusDict["sworker"].Status;
+                    node.SWorkerAStatus = statusDict["sworker-a"].Status;
+                    node.SWorkerBStatus = statusDict["sworker-b"].Status;
+                    node.SManagerStatus = statusDict["smanager"].Status;
+                    node.IpfsStatus = statusDict["ipfs"].Status;
+                }
+                catch
+                {
+                    // ignored
+                }
             }
             else
             {
@@ -198,18 +206,22 @@ namespace CrustMonitor.Data
             }
         }
 
-        public static async Task<string> GetWorkloadAsync(string ip)
+        public static async Task<IDictionary<string, DiskStatus>> GetDiskStatusAsync(string ip)
         {
             try
             {
-                return await CreateClient().GetStringAsync($"http://{ip}:51888/api/crust-monitor/workload");
+                var status =
+                    await CreateClient().GetStringAsync($"http://{ip}:51888/api/crust-monitor/disk-status");
+                var statusDict = JsonSerializer.Deserialize<IDictionary<string, DiskStatus>>(status,
+                    new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+                return statusDict;
             }
             catch
             {
                 // ignored
             }
 
-            return "Request error!";
+            return null;
         }
     }
 }

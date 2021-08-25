@@ -1,6 +1,194 @@
 ﻿@page "/Alert"
-<h3>Coming soon..</h3>
+
+@using CrustMonitor.Data
+@using System.Text.Json
+@inject AlertService _alertService
+
+<h1>SWork Monitor</h1>
+
+<div style="display: flex;justify-content: space-between;">
+    <p>Add Crust address to check sworker report.</p>
+</div>
+
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text">Send Emails:</span>
+    </div>
+    <input type="text" class="form-control" aria-describedby="basic-addon3" @bind="_email">
+    <button @onclick="AddEmailAsync" type="button" class="btn btn-primary ml-1">Set Emails</button>
+</div>
+
+
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text">Crust Address:</span>
+    </div>
+    <input type="text" class="form-control" aria-describedby="basic-addon3" @bind="_address">
+    <button @onclick="AddAddressAsync" type="button" class="btn btn-primary ml-1">Add To Check</button>
+</div>
+
+
+<div class="card-columns">
+    @foreach (var extrinsic in AlertService.Extrinsics)
+    {
+        <div class="card">
+            @if (extrinsic.Success)
+            {
+                <div class="card-header bg-success" style="font-size: 1.5vh; font-weight: bold; display: flex;justify-content: space-between; flex-direction: row; align-items: center">
+                    <a target="_blank" href="https://crust.subscan.io/account/@extrinsic.AccountDisplay.Address" style="color: black ;font-weight: bold">
+                        @extrinsic.AccountDisplay.Address
+                    </a>
+                    <button type="button" @onclick="() => DeleteReportAsync(extrinsic)" class="btn btn-light btm-sm ml-1">
+                        <i class="oi oi-trash"></i>
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="card-header bg-danger" style=" font-size: 1.5vh;font-weight: bold; display :flex;justify-content: space-between;  flex-direction: row; align-items: center">
+                    <div>
+                        @extrinsic.AccountDisplay.Address
+                    </div>
+                    <button type="button" @onclick="() => DeleteReportAsync(extrinsic)" class="btn btn-light btm-sm ml-2">
+                        <i class="oi oi-trash"></i>
+                    </button>
+                </div>
+            }
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item" style="background: #ffffff;padding: 5px">
+                    <div style="display: grid;grid-template-columns: 25% 25% 25% 25%  ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            ExtrinsicIndex:
+                        </div>
+                        <a target="_blank" href="https://crust.subscan.io/extrinsic/@extrinsic.ExtrinsicIndex" style="font-weight: bold">
+                            @extrinsic.ExtrinsicIndex
+                        </a>
+                        <div style="font-weight: bold" class="ml-2">
+                            BlockNum:
+                        </div>
+                        <a target="_blank" href="https://crust.subscan.io/block/@extrinsic.BlockNum" style="font-weight: bold">
+                            @extrinsic.BlockNum
+                        </a>
+                    </div>
+                </li>
+                <li class="list-group-item" style="background: #ffffff;padding: 5px">
+                    <div style="display: grid;grid-template-columns: 33% 33% 33% ;align-items: center; justify-content: center">
+                        <div style="font-weight: bold" class="ml-2">
+                            @GetDateTime(@extrinsic)
+                        </div>
+                        <div style="font-weight: bold">
+                            Last @GetDateTimeDiff(@extrinsic) ago
+                        </div>
+
+                        <div style="font-weight: bold">
+                            Reported @GetReportedWorkload(@extrinsic) TiB
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    }
+
+</div>
+@implements IDisposable
 
 @code {
+    private string _address;
+
+    private string _email;
+
+    [CascadingParameter]
+    public IModalService Modal { get; set; }
+
+        private const string ItemSuccessStyle = "background: #8fd19e;padding: 5px";
+        private const string ItemDangerStyle = "background: #f5c6cb;padding: 5px";
+
+    private volatile bool _running = true;
+
+    private volatile int _interval = 60;
+
+    private int _userTime = -480;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await AlertService.InitEmailsAsync();
+        _email = AlertService.Emails;
+        await AlertService.InitAsync();
+        Task.Factory.StartNew(async () =>
+        {
+            while (_running)
+            {
+                await Task.Delay(_interval * 1000);
+                await InvokeAsync(StateHasChanged);
+            }
+        });
+    }
+
+    private static string GetItemStyle(bool success)
+    {
+        return success ? ItemSuccessStyle : ItemDangerStyle;
+    }
+
+
+    private async Task AddAddressAsync()
+    {
+        await AlertService.AddAddressAsync(_address);
+    }
+
+    private async Task AddEmailAsync()
+    {
+        await AlertService.SetEmailsAsync(_email);
+    }
+
+
+    private async Task DeleteReportAsync(Extrinsic extrinsic)
+    {
+        var res = Modal.Show<DeleteConfirm>("Warning");
+        var result = await res.Result;
+        if (!result.Cancelled)
+        {
+            await AlertService.DeleteReportAsync(extrinsic);
+        }
+    }
+
+    private string GetDateTime(Extrinsic extrinsic)
+    {
+        return DateTime.UnixEpoch.AddSeconds(extrinsic.BlockTimestamp).AddMinutes(-_userTime).ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private string GetDateTimeDiff(Extrinsic extrinsic)
+    {
+        var date = DateTime.UnixEpoch.AddSeconds(extrinsic.BlockTimestamp);
+        var diff = DateTime.UtcNow - date;
+        if (diff < TimeSpan.FromMinutes(1))
+        {
+            return Math.Round(diff.TotalSeconds, 1) + "sec ";
+        }
+        else if (diff < TimeSpan.FromHours(1))
+        {
+            return Math.Round(diff.TotalMinutes, 1) + "min ";
+        }
+        else
+        {
+            return Math.Round(diff.TotalHours, 1) + "hour ";
+        }
+    }
+
+    private static double GetReportedWorkload(Extrinsic extrinsic)
+    {
+        if (!string.IsNullOrEmpty(extrinsic.Params))
+        {
+            var param = JsonSerializer.Deserialize<IDictionary<string, object>[]>(extrinsic.Params);
+            var srdSize = param!.FirstOrDefault(_ => ((JsonElement)_["name"]).GetString() == "reported_srd_size");
+            if (srdSize != null)
+                return Math.Round(((JsonElement)srdSize["value"]).GetUInt64() / 1000000000000.0, 2);
+        }
+        return 0;
+    }
+
+    public void Dispose()
+    {
+        _running = false;
+    }
 
 }

@@ -191,7 +191,13 @@ namespace CrustMonitor.Data
                 }
                 catch
                 {
-                    // ignored
+                    node.ChainStatus = "Unknown";
+                    node.ApiStatus = "Unknown";
+                    node.SWorkerStatus = "Unknown";
+                    node.SWorkerAStatus = "Unknown";
+                    node.SWorkerBStatus = "Unknown";
+                    node.SManagerStatus = "Unknown";
+                    node.IpfsStatus = "Unknown";
                 }
             }
             else

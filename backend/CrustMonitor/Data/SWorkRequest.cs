@@ -14,7 +14,7 @@ namespace CrustMonitor.Data
 
         [JsonPropertyName("module")] public string Module { get; set; } = "swork";
 
-        [JsonPropertyName("call")] public string Call { get; set; } = string.Empty;
+        [JsonPropertyName("call")] public string Call { get; set; } = "report_works";
 
         [JsonPropertyName("no_params")] public bool NoParams { get; set; }
     }

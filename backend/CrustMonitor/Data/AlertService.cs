@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using NETCore.MailKit.Core;
 
 namespace CrustMonitor.Data
@@ -20,17 +21,23 @@ namespace CrustMonitor.Data
         private const string AddressFile = "./addresses.txt";
         private const string MailFile = "./mails.txt";
         public static string Emails;
+        private static string _apiKey;
 
-        public AlertService(IHttpClientFactory factory, IEmailService emailService)
+        public AlertService(IHttpClientFactory factory, IEmailService emailService, IConfiguration configuration)
         {
             _factory = factory;
             _emailService = emailService;
+            _apiKey = configuration.GetSection("SubScanApiKey").Value;
         }
 
         private static HttpClient CreateClient()
         {
-            return _factory!.CreateClient("subscan");
+            var client = _factory!.CreateClient("subscan");
+            if (!string.IsNullOrWhiteSpace(_apiKey))
+                client.DefaultRequestHeaders.Add("x-api-key", _apiKey);
+            return client;
         }
+
 
         static AlertService()
         {
@@ -49,14 +56,14 @@ namespace CrustMonitor.Data
                             var extrinsic = Extrinsics[index];
                             var result = await GetSWorkReportAsync(extrinsic.AccountDisplay.Address);
                             Extrinsics[index] = result;
-                            if (!result.Success)
+                            if (!result.Success && result.ExtrinsicIndex != "Unknown")
                             {
                                 sb.AppendLine(
                                     $"地址： {result.AccountDisplay.Address} 工作量上报失败，交易ID：{result.ExtrinsicIndex}。");
                             }
 
                             if (DateTime.UtcNow - DateTime.UnixEpoch.AddSeconds(result.BlockTimestamp) >
-                                TimeSpan.FromHours(2))
+                                TimeSpan.FromHours(2) && result.ExtrinsicIndex != "Unknown")
                             {
                                 sb.AppendLine(
                                     $"地址： {result.AccountDisplay.Address} 超过2小时未上报工作量，交易ID：{result.ExtrinsicIndex}。");
